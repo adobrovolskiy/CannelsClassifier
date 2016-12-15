@@ -11,8 +11,8 @@ TOP_N_COUNT = 1 # Number of categories to describe the channel
 #from scipy import spatial
 
 # ToDo: benchmark (1 - scipy.spatial.distance.cosine(one.vector, three.vector))
-def cosine_similarity(vec1, vec2):
-    return numpy.dot(vec1, vec2)/(numpy.linalg.norm(vec1) * numpy.linalg.norm(vec2))
+# def cosine_similarity(vec1, vec2):
+#     return numpy.dot(vec1, vec2)/(numpy.linalg.norm(vec1) * numpy.linalg.norm(vec2))
 
 def GetVerticalsListFromFile():
     verticals = []
@@ -31,25 +31,25 @@ def GetVerticalsVectorsDict(nlp, verticals):
         verticalsDict[category] = text.vector
     return verticalsDict
 
-def Classify(nlp, keywords, categories): #keywords  - string; categories - dict: {name; vector}
-
-    keywordsVec = nlp(keywords).vector
-    catArray = numpy.array(list(categories.values()))
-    catKeys = list(categories.keys())
-
+def CreateAndconfigureLSHForest(categories): # categories - dict: {name; vector}
     print("Creating LSHForest...")
-
+    catArray = numpy.array(list(categories.values()))
     lshf = LSHForest(n_candidates=70, n_estimators=30, n_neighbors=TOP_N_COUNT)
     lshf.fit(catArray)
     print("LSHForest was created")
+    return lshf
+
+def Classify(lshf, keywordsVector, categories): #categories - list of categoies
+
+    #keywordsVec = nlp(keywords).vector
 
     print("Getting neighbors...")
-    distances, indices = lshf.kneighbors(keywordsVec.reshape(1, -1))
+    distances, indices = lshf.kneighbors(keywordsVector.reshape(1, -1))
     print("Got neighbors.")
 
     curIter = 0
     for curIndex in numpy.nditer(indices):
-        print("Found category: " + str(catKeys[curIndex]))
+        print("Found category: " + str(categories[curIndex]))
         distance = distances[0][curIter]
         print("with similarity: " + str(1 - distance))
         curIter += 1
