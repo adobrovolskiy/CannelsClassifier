@@ -10,6 +10,8 @@ from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 from Video import Video
 import time
+from random import shuffle
+import operator
 
 def timing(f):
     def wrap(*args):
@@ -111,33 +113,61 @@ def GetVideosFromFile():
     return videos
 
 
-samples = [[0, 0, 2], [1, 0, 0], [0, 0, 1]]
-neigh = NearestNeighbors(2, 0.4, algorithm='brute', metric='cosine')
-neigh.fit(samples)
-res = neigh.kneighbors([[0, 0, 1.3]], 2, return_distance=False)
+def Test(nlp, toTest):
+    targetS = u"MLP,Comic,Reading,My Little Pony: Friendship Is Magic (TV Program),My Little Pony (Fictional Universe),mlp comic reading,mlp comic,mlp reading,pegasus pitch,pegasus pitchva,magpiepony,PTS,Princess Trixie Sparkle,season 5 comic,season 5,season 6 comic,season 6,pinkie tales,my little pony season 6,discord comic,discord mlp,twilight sparkle comic,twilight comic,fluttershy,fluttershy comic"
+    words = targetS.replace(",", " ").split()
+
+    sims = []
+
+    for word in words:
+        curN = nlp(word)
+        sim = curN.similarity(nlp(toTest))
+        #print(word + ". Sim=" + str(sim))
+        sims.append(sim)
+
+    avg = sum(sims) / len(sims)
+    print(toTest + ". Sim= " + str(avg))
+#-------------------- Start
+
+
+class Gen(object):
+    def __init__(self, vars):
+        self.vars = vars
+
+    def curPrint(self):
+            print(self.vars)
+
+g = Gen(4)
+g.curPrint()
 
 
 videos = GetVideosFromFile()
+shuffle(videos)
 
 print("Loading dictinary...")
 nlp = spacy.load('en')
 print("Dictinary loaded.")
 
+Test(nlp, 'Crime')
+Test(nlp, 'Mystery')
+Test(nlp, 'Thriller, Crime & Mystery Films')
+Test(nlp, 'Comics & Animation')
+Test(nlp, 'Comics')
 
 verticals = GetVerticalsListFromFile()
 classifier = KeywordsClassifier.CreateKeywordsClassifier( nlp, verticals, 5)
 
 
-#kwB = GetLargestKeywordsDb()
-#keywordsVect = nlp(kwB).vector
 
-keywordsVect = GetLargestKeywordsDb2(nlp)
 
-start = time.clock()
+
+keywordsVect = GetLargestKeywordsDb3(nlp)
+
+# start = time.clock()
 res = classifier.ClassifyKeywords(keywordsVect)
-end = time.clock()
-elapsed = end - start
-print ('Took %0.3f ms', elapsed *1000.0)
+# end = time.clock()
+# elapsed = end - start
+# print ('Took %0.3f ms', elapsed *1000.0)
 
 
 
@@ -150,7 +180,9 @@ for curVideo in videos:
     print("channelId: " + curVideo.channelId)
     print("category: " + curVideo.category)
 
+
     res = classifier.ClassifyKeywords(keywordsVect)
+    #sorted = sorted(res.items(), key=operator.itemgetter(1))
     g = 5
     #Visualise(res)
 
